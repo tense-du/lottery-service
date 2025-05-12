@@ -104,6 +104,30 @@ Note: The environment mode (Docker vs Local) is automatically handled:
 - In Docker: Set by docker-compose.yml
 - In Local: Defaults to "local" mode
 
+### Using Docker (Recommended)
+
+1. Clone the repository and set up environment:
+```bash
+# Copy environment files
+cp .env.example .env.docker
+
+# Edit .env.docker with your settings
+# Make sure DATABASE_URL uses 'db' as the host
+nano .env.docker
+```
+
+2. Start the services:
+```bash
+docker-compose up --build
+```
+
+This will start:
+- FastAPI application (http://localhost:8000)
+- PostgreSQL database (accessible at 'db:5432' from within Docker network, and at localhost:5432 from your host machine)
+- Redis (accessible at 'redis:6379' from within Docker network, and at localhost:6379 from your host machine)
+- Celery worker and scheduler
+- Database migrations
+
 ### Running Locally
 
 First, ensure you have all dependencies installed:
@@ -134,30 +158,6 @@ pipenv run celery -A app.tasks.celery_worker worker -Q ${CELERY_DEFAULT_QUEUE} -
 # Terminal 3: Celery beat
 pipenv run celery -A app.tasks.celery_worker beat --loglevel=info
 ```
-
-### Using Docker (Recommended)
-
-1. Clone the repository and set up environment:
-```bash
-# Copy environment files
-cp .env.example .env.docker
-
-# Edit .env.docker with your settings
-# Make sure DATABASE_URL uses 'db' as the host
-nano .env.docker
-```
-
-2. Start the services:
-```bash
-docker-compose up --build
-```
-
-This will start:
-- FastAPI application (http://localhost:8000)
-- PostgreSQL database (accessible at 'db:5432' from within Docker network, and at localhost:5432 from your host machine)
-- Redis (accessible at 'redis:6379' from within Docker network, and at localhost:6379 from your host machine)
-- Celery worker and scheduler
-- Database migrations
 
 ## API Documentation
 
