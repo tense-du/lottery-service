@@ -1,0 +1,101 @@
+services:
+  web:
+    build: .
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    volumes:
+      - logs_data:/app/app/logs
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.docker
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrations:
+    build: .
+    working_dir: /app
+    command: alembic -c alembic.ini upgrade head
+    volumes:
+      - logs_data:/app/app/logs
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:7
+    command: ${REDIS_PASSWORD:+redis-server --requirepass ${REDIS_PASSWORD}}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.docker
+
+  celery_worker:
+    build: .
+    working_dir: /app
+    command: >
+      celery -A app.tasks.celery_worker worker  --loglevel=info  -Q "${CELERY_DEFAULT_QUEUE}"
+    volumes:
+      - logs_data:/app/app/logs
+      - celery_data:/app/app/tasks/celery
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.docker
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+
+  celery_beat:
+    build: .
+    working_dir: /app
+    command: celery -A app.tasks.celery_worker beat --loglevel=info
+    volumes:
+      - logs_data:/app/app/logs
+      - celery_data:/app/app/tasks/celery
+    environment:
+      - ENV_MODE=docker
+      - TZ=Europe/Amsterdam
+    env_file:
+      - .env.docker
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data: # Persists database data
+  redis_data: # Persists Redis data
+  logs_data: # Persists all logs
+  celery_data: # Persists Celery beat schedule files 
