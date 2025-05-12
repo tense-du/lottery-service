@@ -104,6 +104,37 @@ Note: The environment mode (Docker vs Local) is automatically handled:
 - In Docker: Set by docker-compose.yml
 - In Local: Defaults to "local" mode
 
+### Running Locally
+
+First, ensure you have all dependencies installed:
+```bash
+pipenv install
+```
+
+### Database Migrations
+
+The service uses Alembic for database migrations. When running locally, migrations must be run before starting the application:
+
+```bash
+# Run migrations (do this before starting the application)
+pipenv run alembic upgrade head
+```
+
+### Starting the Application Locally
+
+After running migrations, start the services in separate terminals:
+
+```bash
+# Terminal 1: FastAPI server
+pipenv run uvicorn app.main:app --reload
+
+# Terminal 2: Celery worker
+pipenv run celery -A app.tasks.celery_worker worker -Q ${CELERY_DEFAULT_QUEUE} --loglevel=info
+
+# Terminal 3: Celery beat
+pipenv run celery -A app.tasks.celery_worker beat --loglevel=info
+```
+
 ### Using Docker (Recommended)
 
 1. Clone the repository and set up environment:
@@ -127,26 +158,6 @@ This will start:
 - Redis (accessible at 'redis:6379' from within Docker network, and at localhost:6379 from your host machine)
 - Celery worker and scheduler
 - Database migrations
-
-### Running Locally
-
-First, ensure you have all dependencies installed:
-```bash
-pipenv install
-```
-
-Then, in separate terminals:
-
-```bash
-# Terminal 1: FastAPI server
-pipenv run uvicorn app.main:app --reload
-
-# Terminal 2: Celery worker
-pipenv run celery -A app.tasks.celery_worker worker -Q ${CELERY_DEFAULT_QUEUE} --loglevel=info
-
-# Terminal 3: Celery beat
-pipenv run celery -A app.tasks.celery_worker beat --loglevel=info
-```
 
 ## API Documentation
 
