@@ -133,6 +133,9 @@ This will start:
 First, ensure you have all dependencies installed:
 ```bash
 pipenv install
+
+# Create necessary directories for Celery
+mkdir -p app/tasks/celery
 ```
 
 ### Database Migrations
